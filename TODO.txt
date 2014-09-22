@@ -1,0 +1,9 @@
+--Incorporate Scene.
+--Make keyboard also event based.
+--Add object selection.
+--Add object dragging.
+--Add object rotation.
+--Add axes model.
+Add shadows.
+Find collisions with GJK.
+Find distance with GJK.
