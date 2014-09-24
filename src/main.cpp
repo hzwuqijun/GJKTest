@@ -11,6 +11,7 @@ CKeyboard*     keyboard;
 EventManager*  event_manager;
 CMouse*        mouse;
 Scene*         scene;
+std::vector<ConvexBody*> bodies;
 ////////////GLUT Keyboard Function Wrappers/////////////
 void keyDown(unsigned char key, int x, int y){
 	if(!TwEventKeyboardGLUT(key, x, y)){
@@ -70,13 +71,19 @@ void init(int argc, char *argv[]){
 
     //Setup scene (Need to run before context->init because anttweakbar gets corrupted)
     {
-        CMesh tetrahedron_mesh = parse_mesh("obj/Tetrahedron.obj", "flat");
-        CMesh cube_mesh        = parse_mesh("obj/cube.obj", "flat");
-        CMesh full_quad_mesh   = parse_mesh("obj/full_quad.obj", "flat");
+        auto tetrahedron_mesh = parse_mesh("obj/Tetrahedron.obj", "flat");
+        auto tetrahedron_body = new ConvexBody(parse_convex_body("obj/Tetrahedron.obj"));
+        bodies.push_back(tetrahedron_body);
+
+        auto cube_mesh = parse_mesh("obj/cube.obj", "flat");
+        auto cube_body = new ConvexBody(parse_convex_body("obj/cube.obj"));
+        bodies.push_back(cube_body);
+
+        CMesh full_quad_mesh = parse_mesh("obj/full_quad.obj", "flat");
 
         auto full_quad   = new SceneObject(full_quad_mesh);
-        auto tetrahedron = new SceneObject(tetrahedron_mesh);
-        auto cube        = new SceneObject(cube_mesh);
+        auto tetrahedron = new SceneObject(tetrahedron_mesh, tetrahedron_body);
+        auto cube        = new SceneObject(cube_mesh, cube_body);
 
         scene->addChild(tetrahedron);
         scene->addChild(cube);
@@ -130,6 +137,7 @@ void close_func(void){
     delete event_manager;
     delete openglContext;
     delete scene;
+    for(auto body: bodies) delete body;
 }
 
 int main(int argc,char *argv[] ){
@@ -142,12 +150,12 @@ int main(int argc,char *argv[] ){
 
 	glutInit(&argc, argv);
 	init(argc, argv);
-	
+
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
-	
-	
+
+
 	glutKeyboardFunc(keyDown);
 	glutKeyboardUpFunc(keyUp);
 	glutSpecialFunc(specialDown);
@@ -157,7 +165,7 @@ int main(int argc,char *argv[] ){
 	glutPassiveMotionFunc(onPassiveMotion);
 
     glutCloseFunc(&close_func);
-	
+
 	glutMainLoop();
 
 	return 1;

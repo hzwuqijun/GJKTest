@@ -18,33 +18,33 @@ OpenGLContext::OpenGLContext(Scene* scene):
     scene_(scene)
 {}
 
-OpenGLContext::~OpenGLContext(void) { 
+OpenGLContext::~OpenGLContext(void) {
     delete sh_gbuffer;
     delete arrows_;
-} 
+}
 
 bool OpenGLContext::create30Context(void){
     glutInitContextVersion(3, 3);
     glutInitContextProfile(GLUT_CORE_PROFILE);
-    
+
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
     glutInitWindowSize(600, 600);
     windowWidth = windowHeight = 600;
     glutCreateWindow("partViewer GLSL");
-    
+
     glewExperimental = GL_TRUE;
     GLenum error = glewInit(); //Enable GLEW
     if(error != GLEW_OK) return false; //Failure!
     glError(__FILE__, __LINE__);
-    
+
     int glVersion[2] = {-1,1};
     glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]);
     glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
-    
+
     printf("Using OpenGL: %u.%u\n", glVersion[0], glVersion[1]);
     printf("Renderer used: %s.\n", glGetString(GL_RENDERER));
     printf("Shading Language: %s.\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    
+
     return true;
 }
 
@@ -52,46 +52,45 @@ void OpenGLContext::createGui(void){
     TwInit(TW_OPENGL_CORE, NULL);
     TwWindowSize(windowWidth, windowHeight);
     bar = TwNewBar("Parameters");
-    
-    TwDefine(
-        "Parameters position='0 0' size='200 250' iconified=true");
-    
-    TwAddVarRW(bar, "Rotation", TW_TYPE_BOOLCPP, &rotating, "");  
-    
+
+    TwDefine("Parameters position='0 0' size='200 250' iconified=true");
+
+    TwAddVarRW(bar, "Rotation", TW_TYPE_BOOLCPP, &rotating, "");
+
     TwAddVarCB(bar, "Specular", TW_TYPE_FLOAT, CLight::SetSpecIntCallback, CLight::GetSpecIntCallback, &light,"\
         min=0.0 max=2.0 step=0.01 group=Light");
-    
+
     TwAddVarCB(bar, "Diffuse", TW_TYPE_FLOAT, CLight::SetDiffIntCallback, CLight::GetDiffIntCallback, &light,"\
         min=0.0 max=2.0 step=0.01 group=Light");
-    
+
     TwAddVarCB(bar, "Ambient", TW_TYPE_FLOAT, CLight::SetAmbIntCallback, CLight::GetAmbIntCallback, &light,"\
         min=0.0 max=2.0 step=0.01 group=Light");
-    
+
     TwAddVarCB(bar, "Intensity", TW_TYPE_FLOAT, CLight::SetIntCallback, CLight::GetIntCallback, &light,"\
-        min=0.0 max=2.0 step=0.01 group=Light");    
-        
+        min=0.0 max=2.0 step=0.01 group=Light");
+
     // float color[3] = {1.0, 1.0, 1.0};
     //TwAddVarRW(bar, "Particle Color", TW_TYPE_COLOR3F, &diffcolor," colormode=hls ");
     //TwAddVarRW(bar, "Background Color", TW_TYPE_COLOR3F, &m_bgColor," colormode=hls ");
 }
 
 void OpenGLContext::init(int argc, char *argv[]){
-    
+
     createGui();
-    
+
     glClearColor(m_bgColor[0], m_bgColor[1], m_bgColor[2], 1.0);
-    
+
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_ONE, GL_ONE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    
+
     sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
-    
+
     if(!light.Init(sh_gbuffer->id())) printf("Cannot bind light uniform.\n");
-    
+
 	camera.setProjectionParams((float) windowWidth / windowHeight, fov, znear, zfar);
 	arrow_camera.setProjectionParams(1.0f, fov, znear, zfar);
 
@@ -131,8 +130,9 @@ void OpenGLContext::processScene(void){
     float this_time = glutGet(GLUT_ELAPSED_TIME)/1000.0f;
     // if(this_time-last_time > 1.0f/61.0f){
     if(rotating){
-        scene_->rotate((this_time-last_time) * 30.0f, glm::vec3(0.0, 1.0, 0.0));
+        scene_->pre_rotate((this_time-last_time) * 30.0f, glm::vec3(0.0, 1.0, 0.0));
     }
+    camera.update();
     redisplay = true;
     last_time = this_time;
     // }
@@ -142,7 +142,7 @@ void OpenGLContext::drawConfiguration(void)const{
 
     glm::mat4 pMatrix = camera.getProjectionMatrix();
     glm::mat4 ModelViewMatrix = camera.getViewMatrix() * scene_->getModelMatrix();
-    
+
     sh_gbuffer->setUniform("scale", 1.0f);
 
     glDisable(GL_CULL_FACE);
@@ -186,20 +186,20 @@ void OpenGLContext::drawConfiguration(void)const{
 void OpenGLContext::drawPass(void)const{
 
     glDisable(GL_BLEND);
-    
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+
     sh_gbuffer->bind();
-    {   
+    {
         light.uploadDirection(camera.getViewMatrix());
         drawConfiguration();
     }
     sh_gbuffer->unbind();
-    
+
     glEnable(GL_BLEND);
 }
 
-void OpenGLContext::renderScene(void){  
+void OpenGLContext::renderScene(void){
     drawPass();
     TwDraw();
     glutSwapBuffers();
@@ -209,7 +209,9 @@ void OpenGLContext::hOnMiddleMouseDrag(const Event& event){
     auto drag_event = static_cast<const MouseDragEvent&>(event);
     int dx = drag_event.end_.x - drag_event.start_.x;
     int dy = drag_event.end_.y - drag_event.start_.y;
-    scene_->pre_rotate(0.5f * dx, glm::vec3(0.0, 1.0, 0.0));
+    auto y_axis = glm::vec3(0.0, 1.0, 0.0);
+    if(glm::dot(glm::mat3(scene_->getModelMatrix()) * y_axis, y_axis) < 0.0) y_axis = -y_axis;
+    scene_->pre_rotate(0.5f * dx, y_axis);
     scene_->rotate(0.5f * dy, glm::vec3(1.0, 0.0, 0.0));
 }
 

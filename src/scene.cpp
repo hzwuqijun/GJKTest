@@ -2,11 +2,11 @@
 
 /********* Scene Object *********/
 
-SceneObject::SceneObject(CMesh mesh):
+SceneObject::SceneObject(CMesh mesh, ConvexBody* body):
     Transformable(),
     is_selectable_(true), is_selected_(false), 
     color_(1.0f),
-    mesh_(mesh)
+    mesh_(mesh), body_(body)
 {}
 
 void SceneObject::make_selectable(void){

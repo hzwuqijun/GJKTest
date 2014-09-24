@@ -4,8 +4,7 @@
 --Add object dragging.
 --Add object rotation.
 --Add axes model.
-Add RigidBody class.
-Add Physics class.
+--Add ConvexBody class.
 Find collisions with GJK.
 Find distance with GJK.
 Add shadows.
