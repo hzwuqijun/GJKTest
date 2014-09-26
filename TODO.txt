@@ -5,6 +5,6 @@
 --Add object rotation.
 --Add axes model.
 --Add ConvexBody class.
-Find collisions with GJK.
+--Find collisions with GJK.
 Find distance with GJK.
 Add shadows.

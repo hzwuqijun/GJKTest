@@ -21,6 +21,10 @@ CMesh& SceneObject::getMesh(void){
     return mesh_;
 }
 
+const ConvexBody* SceneObject::getBody(void)const{
+    return body_;
+}
+
 void SceneObject::setColor(const glm::vec3& color){
     color_ = color;
 }

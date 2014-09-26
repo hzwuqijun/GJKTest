@@ -6,6 +6,7 @@
 #include "include/obj_parser.h"
 #include "include/main.h"
 #include "include/mouse.h"
+#include "include/collision.h"
 
 OpenGLContext::OpenGLContext(Scene* scene):
     redisplay(false),
@@ -82,7 +83,7 @@ void OpenGLContext::init(int argc, char *argv[]){
 
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_ONE, GL_ONE);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -318,6 +319,10 @@ void OpenGLContext::hOnRightMouseDrag(const Event& event){
 
             object->translate( ((factor * dx) / windowHeight) * (dist / znear) * right); //also divide by height due to aspect
             object->translate(-((factor * dy) / windowHeight) * (dist / znear) * up);
+
+            if(find_collisions(*scene_)){
+                printf("Found a collision\n");
+            }
 
             break;
         }

@@ -11,6 +11,7 @@ class SceneObject: public Transformable{
 public:
     SceneObject(CMesh mesh, ConvexBody* body = nullptr);
     CMesh& getMesh(void);
+    const ConvexBody* getBody(void)const;
     void setColor(const glm::vec3& color);
     const glm::vec3& getColor(void)const;
     void make_selectable(void);
