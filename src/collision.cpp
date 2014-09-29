@@ -318,18 +318,21 @@ bool gjk_overlap(
 
 };
 
-bool find_collisions(const Scene& scene){
+std::vector<std::pair<SceneObject*, SceneObject*>> find_collisions(const Scene& scene){
+    std::vector<std::pair<SceneObject*, SceneObject*>> collisions;
     for(auto object_a = scene.children_.begin(); object_a < scene.children_.end(); ++object_a){
         if((*object_a)->getBody()){
             for(auto object_b = object_a + 1; object_b < scene.children_.end(); ++object_b){
                 if((*object_b)->getBody()){
-                    return gjk_overlap(*(*object_a)->getBody(),       *(*object_b)->getBody(),
-                                        (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix());
+                    if(gjk_overlap(*(*object_a)->getBody(),       *(*object_b)->getBody(),
+                                    (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix()))
+                    {
+                        collisions.push_back(std::make_pair(*object_a, *object_b));
+                    }
                 }
             }
         }
     }
-
-    return false;
+    return collisions;
 }
 

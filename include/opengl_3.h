@@ -26,11 +26,11 @@ public:
     void hOnLeftMouseDrag(const Event& event);
     void hOnMouseRoll(const Event& event);
     void hOnMouseLeftClick(const Event& event);
-	
+
 	bool redisplay;
     Camera camera;
     Camera arrow_camera;
-	
+
 private:
 	void drawPass(void)const;
 	void drawConfiguration(void)const;
@@ -39,21 +39,22 @@ private:
 	int windowWidth;
 	int windowHeight;
 	float fov, znear, zfar;
-	
+
 	bool rotating;
-	
+    bool check_collisions_;
+
 	glm::vec3 m_bgColor;
-	
+
 	glm::mat4 projectionMatrix;
 	glm::mat4 lightViewMatrix;
 	glm::mat4 lightProjectionMatrix;
-	
+
 	CLight light;
     Scene* scene_;
     Scene* arrows_;
-	
+
 	Shader *sh_gbuffer; // GLSL Shader
-	
+
 	TwBar *bar;
 };
 

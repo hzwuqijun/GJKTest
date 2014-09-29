@@ -13,7 +13,7 @@ OpenGLContext::OpenGLContext(Scene* scene):
     camera(1.0f, glm::vec3(0.0f, 8.0f, 25.0f), glm::vec3(0.0)),
     arrow_camera(1.0f, glm::vec3(0.0f, 8.0f, 25.0f), glm::vec3(0.0)),
     fov(45.0f), znear(1.0f), zfar (100.0f),
-    rotating(false),
+    rotating(false), check_collisions_(false),
     m_bgColor(0.4, 0.6, 0.9),
     light(glm::vec3(-10.0, 10.0, 10.0), glm::vec3(1.0, -1.0, -1.0)),
     scene_(scene)
@@ -136,6 +136,14 @@ void OpenGLContext::processScene(void){
     camera.update();
     redisplay = true;
     last_time = this_time;
+
+    auto collisions = find_collisions(*scene_);
+    for(auto object: scene_->children_) object->is_colliding_ = false;
+    for(auto collision: collisions){
+        collision.first->is_colliding_  = true;
+        collision.second->is_colliding_ = true;
+    }
+    check_collisions_ = false;
     // }
 }
 
@@ -148,8 +156,9 @@ void OpenGLContext::drawConfiguration(void)const{
 
     glDisable(GL_CULL_FACE);
     for(auto object: scene_->children_){
-        sh_gbuffer->setUniform("diffColor", 1, object->getColor());
         if(object->is_selected_) sh_gbuffer->setUniform("diffColor", 1, glm::vec3(1.0f, 1.0f, 0.0f));
+        else if(object->is_colliding_) sh_gbuffer->setUniform("diffColor", 1, glm::vec3(1.0f, 0.0f, 0.0f));
+        else sh_gbuffer->setUniform("diffColor", 1, object->getColor());
         glm::mat4 tempModelViewMatrix = ModelViewMatrix * object->getModelMatrix();
         glm::mat3 tempNormalMatrix    = glm::mat3(glm::transpose(glm::inverse(tempModelViewMatrix)));
         glm::mat4 tempMVPMatrix       = pMatrix * tempModelViewMatrix;
@@ -168,7 +177,6 @@ void OpenGLContext::drawConfiguration(void)const{
     glViewport(-min_size / 30, -min_size / 30, min_size / 5, min_size / 5);
     for(auto object: arrows_->children_){
         sh_gbuffer->setUniform("diffColor", 1, object->getColor());
-        if(object->is_selected_) sh_gbuffer->setUniform("diffColor", 1, glm::vec3(1.0f, 0.0f, 0.0f));
         glm::mat4 tempModelViewMatrix = ModelViewMatrix * object->getModelMatrix();
         glm::mat3 tempNormalMatrix    = glm::mat3(glm::transpose(glm::inverse(tempModelViewMatrix)));
         glm::mat4 tempMVPMatrix       = pMatrix * tempModelViewMatrix;
@@ -295,6 +303,8 @@ void OpenGLContext::hOnLeftMouseDrag(const Event& event){
 
             object->rotate(angle, c);
 
+            check_collisions_ = true;
+
             break;
         }
     }
@@ -320,9 +330,7 @@ void OpenGLContext::hOnRightMouseDrag(const Event& event){
             object->translate( ((factor * dx) / windowHeight) * (dist / znear) * right); //also divide by height due to aspect
             object->translate(-((factor * dy) / windowHeight) * (dist / znear) * up);
 
-            if(find_collisions(*scene_)){
-                printf("Found a collision\n");
-            }
+            check_collisions_ = true;
 
             break;
         }

@@ -2,7 +2,8 @@
 #define __COLLISION_H
 
 #include "scene.h"
+#include <utility>
 
-bool find_collisions(const Scene& scene);
+std::vector<std::pair<SceneObject*, SceneObject*>> find_collisions(const Scene& scene);
 
 #endif

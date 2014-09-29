@@ -19,6 +19,7 @@ public:
 
     bool is_selectable_;
     bool is_selected_;
+    bool is_colliding_;
 private:
     glm::vec3 color_;
     CMesh mesh_;

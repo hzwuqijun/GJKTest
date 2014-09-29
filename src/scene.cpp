@@ -4,7 +4,7 @@
 
 SceneObject::SceneObject(CMesh mesh, ConvexBody* body):
     Transformable(),
-    is_selectable_(true), is_selected_(false), 
+    is_selectable_(true), is_selected_(false), is_colliding_(false),
     color_(1.0f),
     mesh_(mesh), body_(body)
 {}
