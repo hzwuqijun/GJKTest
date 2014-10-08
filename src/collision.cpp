@@ -24,14 +24,15 @@ struct Simplex{
     uchar size;
 };
 
-inline uchar addPoint(Simplex* s){
+inline void addPoint(Simplex* s, const float* point){
     uchar b = ~s->bits; //Flip bits
     b &= -b; //Last set (available) bit
     uchar pos = s_pos[b]; //Get the bit position from the lookup table
     s->last_sb = pos;
     s->bits |= b; //Insert the new bit
     s->size++;
-    return pos;
+
+    memcpy(s->p + 3 * pos, point, 3 * sizeof(*point));
 }
 
 inline void removePoint(Simplex *s, int p){
@@ -65,7 +66,7 @@ inline void triple_p(const float* a, const float* b, const float* c, float* resu
 }
 
 inline void support(
-    Simplex* s,
+    float* new_point,
     const ConvexBody& body_a,
     const ConvexBody& body_b,
     const glm::mat4& model_matrix_a,
@@ -85,11 +86,9 @@ inline void support(
 
     auto dist_vec = glm::vec3(vertex_a) / vertex_a.w - glm::vec3(vertex_b) / vertex_b.w;
 
-    int pos = addPoint(s);
-
-    s->p[3 * pos + 0] = dist_vec[0];
-    s->p[3 * pos + 1] = dist_vec[1];
-    s->p[3 * pos + 2] = dist_vec[2];
+    new_point[0] = dist_vec[0];
+    new_point[1] = dist_vec[1];
+    new_point[2] = dist_vec[2];
 }
 
 bool containsOrigin(Simplex* s, float* dir){
@@ -296,21 +295,32 @@ bool gjk_overlap(
     const glm::mat4& model_matrix_a, const glm::mat4& model_matrix_b
 )
 {
-    float dir[3] = {1.0, 0.0, 0.0};
+    float dir[3] = {1.0f, 0.0f, 0.0f};
     Simplex S;
     S.size = 0;
     S.bits = 0;
 
     uint fail_safe = 0;
 
-    while(fail_safe < 20){
+    float new_point[3];
+    support(new_point, a, b, model_matrix_a, model_matrix_b, glm::make_vec3(dir));
 
+    while(fail_safe < 20){
         fail_safe++;
 
-        support(&S, a, b, model_matrix_a, model_matrix_b, glm::make_vec3(dir));
+        addPoint(&S, new_point);
 
-        if(dot_p((S.p+3*(S.last_sb)), dir) < 0.0) return false;
-        else if(containsOrigin(&S, dir)) return true;
+        if(containsOrigin(&S, dir)) return true;
+        const float* last = S.p + 3 * S.last_sb;
+
+        support(new_point, a, b, model_matrix_a, model_matrix_b, glm::make_vec3(dir));
+
+        //TODO: Needs fixing?
+        if(fabs(dot_p(dir, new_point) - dot_p(dir, last)) < 1e-4){
+        //if(dot_p(dir, new_point) < 0.0){
+            printf("%f\n", -dot_p(dir, last) / sqrt(dot_p(dir, dir)));
+            return false;
+        }
     }
     printf("Encountered error in GJK: Infinite Loop.\n Direction (%f, %f, %f)\n", dir[0], dir[1], dir[2]);
     return false;

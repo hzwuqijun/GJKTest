@@ -137,13 +137,15 @@ void OpenGLContext::processScene(void){
     redisplay = true;
     last_time = this_time;
 
-    auto collisions = find_collisions(*scene_);
-    for(auto object: scene_->children_) object->is_colliding_ = false;
-    for(auto collision: collisions){
-        collision.first->is_colliding_  = true;
-        collision.second->is_colliding_ = true;
+    if(check_collisions_){
+        auto collisions = find_collisions(*scene_);
+        for(auto object: scene_->children_) object->is_colliding_ = false;
+        for(auto collision: collisions){
+            collision.first->is_colliding_  = true;
+            collision.second->is_colliding_ = true;
+        }
+        check_collisions_ = false;
     }
-    check_collisions_ = false;
     // }
 }
 
