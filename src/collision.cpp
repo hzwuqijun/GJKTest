@@ -16,7 +16,7 @@ const uchar p_pos[16][3] =
 };
 
 const uchar s_pos[] = {0, 0, 1, 0, 2, 0, 0, 0, 3}; //Lookup table for single enabled bit position
-//_______________________________^__^_____^___________^
+//________________________^__^_____^___________^
 
 struct Simplex{
     float p[12];//up to 4 points / 3-Simplex
@@ -308,6 +308,36 @@ bool containsOrigin(Simplex* s, float* dir){
     return false;
 }
 
+bool inSimplex(const Simplex* s, float* point){
+    uchar bits = s->bits;
+    for(int i = 0; i < 4; ++i, bits >>= 1){
+        if(bits & 1){
+            const float* s_point = s->p + 3 * i;
+            if(s_point[0] == point[0] &&
+               s_point[1] == point[1] &&
+               s_point[2] == point[2]
+            ) return true;
+        }
+    }
+
+    //const uchar* poss = p_pos[bits ^ (1 << s->last_sb)];
+    //for(int i = 0; i < s->size - 1; ++i){
+    //    const float* s_point = s->p + 3 * poss[i];
+    //    if(s_point[0] == point[0] &&
+    //       s_point[1] == point[1] &&
+    //       s_point[2] == point[2]
+    //    ) return true;
+    //}
+
+    //const float* s_point = s->p + 3 * s->last_sb;
+    //if(s_point[0] == point[0] &&
+    //   s_point[1] == point[1] &&
+    //   s_point[2] == point[2]
+    //) return true;
+
+    return false;
+}
+
 bool gjk_overlap(
     const ConvexBody& a, const ConvexBody& b,
     const glm::mat4& model_matrix_a, const glm::mat4& model_matrix_b
@@ -332,12 +362,9 @@ bool gjk_overlap(
 
         support(new_point, a, b, model_matrix_a, model_matrix_b, glm::make_vec3(dir));
 
-        //@note: If we set tolerance low, it is possible in some cases that a point
-        //is added twice. We should maybe check explicitly if the new point
-        //already exists in the simplex.
-        //@note: The condition is correct, it can be derived from |v|^2 - v . w < |v|^2 * eps
         const float* last = S.p + 3 * S.last_sb;
-        if(dot_p(dir, new_point) - dot_p(dir, last) < -1e-6f * dot_p(dir, last)){
+        //The condition is correct, it can be derived from |v|^2 - v . w < |v|^2 * eps
+        if(inSimplex(&S, new_point) || dot_p(dir, new_point) - dot_p(dir, last) < -1e-10f * dot_p(dir, last)){
             printf("%d, %f, ", S.size, -dot_p(dir, last) / sqrt(dot_p(dir, dir)));
             return false;
         }
