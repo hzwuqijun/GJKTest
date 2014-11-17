@@ -211,6 +211,7 @@ bool containsOrigin(Simplex* s, float* dir){
             removePoint(s, pos[1]);
             break;
         }
+
         /* 'else' should only be when the origin is inside the tetrahedron */
         return true;
     }
@@ -233,13 +234,23 @@ bool containsOrigin(Simplex* s, float* dir){
             ac[i] = c[i] - a[i];
         }
 
-        ////////////////////* Edge Cases *///////////////////
-
         float abxac[3];
         cross_p(ab, ac, abxac);
 
-        /* Origin on the outside of triangle and close to ab */
         cross_p(ab, abxac, abPerp);
+        cross_p(abxac, ac, acPerp);
+
+        //NOTE: Extra case added.
+        if(dot_p(abPerp, a) < 0.0 && dot_p(acPerp, a) < 0.0){
+            for(uint i = 0; i < 3; i++) dir[i] = -a[i]; //Take direction passing through origin
+            removePoint(s, pos[0]);
+            removePoint(s, pos[1]);
+            break;
+        }
+
+        ////////////////////* Edge Cases *///////////////////
+
+        /* Origin on the outside of triangle and close to ab */
         if(dot_p(abPerp, a) < 0.0){
             triple_p(a, ab, ab, dir);
             /* Remove Point c */
@@ -248,7 +259,6 @@ bool containsOrigin(Simplex* s, float* dir){
         }
 
         /* Origin on the outside of triangle and close to ac */
-        cross_p(abxac, ac, acPerp);
         if(dot_p(acPerp, a) < 0.0){
             triple_p(a, ac, ac, dir);
             /* Remove Point b */
@@ -257,9 +267,8 @@ bool containsOrigin(Simplex* s, float* dir){
         }
 
         /////////////////////* Face Case *///////////////////
-
         int sign = (dot_p(abxac, a) > 0.0)? -1: 1;
-        for(uint i = 0; i < 3; i++) dir[i] = sign * abxac[i];
+        for(int i = 0; i < 3; ++i) dir[i] = sign * abxac[i];
         break;
     }
     case 2:
@@ -273,7 +282,15 @@ bool containsOrigin(Simplex* s, float* dir){
         float *a = (s->p + 3*s->last_sb);
         float *b = (s->p + 3*pos[0]);
         float ab[3];
+
         for(uint i = 0; i < 3; i++) ab[i] = b[i] - a[i];
+
+        if(dot_p(ab, a) > 0.0){
+            for(uint i = 0; i < 3; i++) dir[i] = -a[i]; //Take direction passing through origin
+            removePoint(s, pos[0]);
+            break;
+        }
+
         triple_p(a, ab, ab, dir);
         break;
     }
@@ -312,14 +329,16 @@ bool gjk_overlap(
         addPoint(&S, new_point);
 
         if(containsOrigin(&S, dir)) return true;
-        const float* last = S.p + 3 * S.last_sb;
 
         support(new_point, a, b, model_matrix_a, model_matrix_b, glm::make_vec3(dir));
 
-        //TODO: Needs fixing?
-        if(fabs(dot_p(dir, new_point) - dot_p(dir, last)) < 1e-5){
-        //if(dot_p(dir, new_point) < 0.0){
-            printf("%f, ", -dot_p(dir, last) / sqrt(dot_p(dir, dir)));
+        //@note: If we set tolerance low, it is possible in some cases that a point
+        //is added twice. We should maybe check explicitly if the new point
+        //already exists in the simplex.
+        //@note: The condition is correct, it can be derived from |v|^2 - v . w < |v|^2 * eps
+        const float* last = S.p + 3 * S.last_sb;
+        if(dot_p(dir, new_point) - dot_p(dir, last) < -1e-6f * dot_p(dir, last)){
+            printf("%d, %f, ", S.size, -dot_p(dir, last) / sqrt(dot_p(dir, dir)));
             return false;
         }
     }
@@ -339,11 +358,9 @@ std::vector<std::pair<SceneObject*, SceneObject*>> find_collisions(const Scene& 
                                     (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix());
                     //bool condition = closest_points(*(*object_a)->getBody(), *(*object_b)->getBody(),
                     //                (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix()) < 1e-5;
-                    if(condition){
-                        collisions.push_back(std::make_pair(*object_a, *object_b));
-                    }
-                    printf("%f\n", closest_points(*(*object_a)->getBody(), *(*object_b)->getBody(),
-                                    (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix()));
+                    if(condition) collisions.push_back(std::make_pair(*object_a, *object_b));
+                    printf("%f\n", sqrt(closest_points(*(*object_a)->getBody(), *(*object_b)->getBody(),
+                                    (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix())));
                 }
             }
         }

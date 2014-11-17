@@ -4,7 +4,7 @@ OBJ+= bin/event_manager.o
 EXE=partViewer
 
 CC=g++
-CFLAGS=-Wall -O3 -std=c++11 -I.
+CFLAGS=-Wall -O3 -std=c++11 -g -I.
 LDFLAGS= -lGLEW -lglut -lGL -lGLU -lAntTweakBar
 RM=rm
 

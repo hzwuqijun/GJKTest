@@ -25,9 +25,9 @@
 #define DT_GJK_H
 
 //#define USE_BACKUP_PROCEDURE
-//#define JOHNSON_ROBUST
+#define JOHNSON_ROBUST
 #define FAST_CLOSEST
-//#define UNROLL_LOOPS
+#define UNROLL_LOOPS
 
 
 #include "MT_Point3.h"

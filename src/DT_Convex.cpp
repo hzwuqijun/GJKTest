@@ -58,12 +58,12 @@ MT_Scalar closest_points(const ConvexBody& a, const ConvexBody& b,
 		MT_Vector3 w = p - q;
 
 		MT_Scalar delta = v.dot(w);
-		if (delta > MT_Scalar(0.0) && delta * delta > dist2 * 10.0) 
-		{
-			return MT_INFINITY;
-		}
+		//if (delta > MT_Scalar(0.0) && delta * delta > dist2 * 100.0) 
+		//{
+		//	return MT_INFINITY;
+		//}
 
-		if (gjk.inSimplex(w) || dist2 - delta <= dist2 * 1e-8) 
+		if (gjk.inSimplex(w) || dist2 - delta <= dist2 * 1e-10) 
 		{
             break;
 		}
@@ -81,7 +81,7 @@ MT_Scalar closest_points(const ConvexBody& a, const ConvexBody& b,
 
 		dist2 = v.length2();
     }
-    while (!gjk.fullSimplex() && dist2 > 1e-4 * gjk.maxVertex()); 
+    while (!gjk.fullSimplex() && dist2 > 1e-5 * gjk.maxVertex()); 
 
 	assert(!gjk.emptySimplex());
 	
