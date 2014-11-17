@@ -1,5 +1,6 @@
 #include "include/collision.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "include/DT_Convex.h"
 
 namespace{
 using uchar = unsigned char;
@@ -316,9 +317,9 @@ bool gjk_overlap(
         support(new_point, a, b, model_matrix_a, model_matrix_b, glm::make_vec3(dir));
 
         //TODO: Needs fixing?
-        if(fabs(dot_p(dir, new_point) - dot_p(dir, last)) < 1e-4){
+        if(fabs(dot_p(dir, new_point) - dot_p(dir, last)) < 1e-5){
         //if(dot_p(dir, new_point) < 0.0){
-            printf("%f\n", -dot_p(dir, last) / sqrt(dot_p(dir, dir)));
+            printf("%f, ", -dot_p(dir, last) / sqrt(dot_p(dir, dir)));
             return false;
         }
     }
@@ -334,11 +335,15 @@ std::vector<std::pair<SceneObject*, SceneObject*>> find_collisions(const Scene& 
         if((*object_a)->getBody()){
             for(auto object_b = object_a + 1; object_b < scene.children_.end(); ++object_b){
                 if((*object_b)->getBody()){
-                    if(gjk_overlap(*(*object_a)->getBody(),       *(*object_b)->getBody(),
-                                    (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix()))
-                    {
+                    bool condition = gjk_overlap(*(*object_a)->getBody(), *(*object_b)->getBody(),
+                                    (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix());
+                    //bool condition = closest_points(*(*object_a)->getBody(), *(*object_b)->getBody(),
+                    //                (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix()) < 1e-5;
+                    if(condition){
                         collisions.push_back(std::make_pair(*object_a, *object_b));
                     }
+                    printf("%f\n", closest_points(*(*object_a)->getBody(), *(*object_b)->getBody(),
+                                    (*object_a)->getModelMatrix(), (*object_b)->getModelMatrix()));
                 }
             }
         }

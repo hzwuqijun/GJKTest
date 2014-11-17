@@ -139,6 +139,10 @@ void OpenGLContext::processScene(void){
 
     if(check_collisions_){
         auto collisions = find_collisions(*scene_);
+        //auto start = glutGet(GLUT_ELAPSED_TIME);
+        //for(int i = 0; i < 1000000; ++i) collisions = find_collisions(*scene_);
+        //auto dt = glutGet(GLUT_ELAPSED_TIME) - start;
+        //printf("--%d\n", dt);
         for(auto object: scene_->children_) object->is_colliding_ = false;
         for(auto collision: collisions){
             collision.first->is_colliding_  = true;
